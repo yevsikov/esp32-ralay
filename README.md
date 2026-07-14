@@ -28,7 +28,9 @@ GND
 
 ## Result
 
-```millis()
+### millis()  
+
+```
 ON: 4 ms
 OFF: 8 ms
 _
@@ -62,7 +64,10 @@ _
 Average: 6 ms
 ```
 
-``` micros()
+
+### micros()  
+
+```
 ON: 3562 mcs
 OFF: 7499 mcs
 _
