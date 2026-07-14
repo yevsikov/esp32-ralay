@@ -10,6 +10,11 @@ int summ = 0;
 int average = 0;
 volatile int contactStatus = LOW;
 
+int getCurrentTime() {
+  // return millis();
+  return micros();
+}
+
 void setup() {
   Serial.begin(115200);
   delay(2000);
@@ -26,14 +31,14 @@ void setup() {
 void loop() {
   contactStatus = digitalRead(CONTACT_PIN);
   counter++;
-  int startMicros = micros();
+  int startTime = getCurrentTime();
   digitalWrite(RELAY_PIN, HIGH);
   while (contactStatus == LOW)
   {
       delay(1);
       contactStatus = digitalRead(CONTACT_PIN);
   }
-  int result = micros() - startMicros ;
+  int result = getCurrentTime() - startTime ;
 
   Serial.print("ON: ");
   Serial.print(result);
@@ -43,15 +48,14 @@ void loop() {
   summ += result;
 
 
-
-  startMicros = micros();
+  startTime = getCurrentTime();
   digitalWrite(RELAY_PIN, LOW);
     while (contactStatus == HIGH)
   {
       delay(1);
       contactStatus = digitalRead(CONTACT_PIN);
   }
-  result = micros() - startMicros ;
+  result = getCurrentTime() - startTime ;
   Serial.print("OFF: ");
   Serial.print(result);
   Serial.println(" mcs");
