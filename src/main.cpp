@@ -21,26 +21,26 @@ void setup() {
 }
 
 void loop() {
-  int startMillis = millis();
+  int startMicros = micros();
   digitalWrite(RELAY_PIN, HIGH);
-  
-  int contactState = digitalRead(CONTACT_PIN);
-  Serial.print("Relay state: ");
-  Serial.println(contactState);
-  int resultMillis = millis() - startMillis;
-  Serial.println(resultMillis);
+  while (digitalRead(CONTACT_PIN) == LOW)
+  {
+      delay(1);
+  }
+  int result = micros() - startMicros ;
+
+  Serial.print("ON: ");
+  Serial.print(result);
+  Serial.println(" mcs");
   delay(RELAY_SET_MS);
 
-  startMillis = millis();
+
+
+
   digitalWrite(RELAY_PIN, LOW);
-  contactState = digitalRead(CONTACT_PIN);
-  Serial.print("Relay state: ");
-  Serial.println(contactState);
-  resultMillis = millis() - startMillis;
-  Serial.println(resultMillis);
+  Serial.print("OFF");
   delay(RELAY_SET_MS);
-
-   Serial.println('_');
+  Serial.println('_');
 
 }
 
