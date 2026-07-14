@@ -36,9 +36,16 @@ void loop() {
 
 
 
-
+  startMicros = micros();
   digitalWrite(RELAY_PIN, LOW);
-  Serial.print("OFF");
+    while (digitalRead(CONTACT_PIN) == HIGH)
+  {
+      delay(1);
+  }
+  result = micros() - startMicros ;
+  Serial.print("OFF: ");
+  Serial.print(result);
+  Serial.println(" mcs");
   delay(RELAY_SET_MS);
   Serial.println('_');
 
