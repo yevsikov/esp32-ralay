@@ -4,15 +4,28 @@
 #define CONTACT_PIN 18
 
 #define RELAY_SET_MS 1000
+#define MEASUREMENTS_COUNT 10
+#define WAIT_TIMEOUT_US 1000000UL // safety timeout for one edge, 1s
 
-int counter = 0;
-int summ = 0;
-int average = 0;
-volatile int contactStatus = LOW;
+long counter = 0;
+long summ = 0;
+long average = 0;
 
-int getCurrentTime() {
-  // return millis();
-  return micros();
+// shared between ISR and loop()
+volatile unsigned long toggleStartTime = 0;
+volatile unsigned long reactionTime = 0;
+volatile bool edgeDetected = false;
+
+IRAM_ATTR unsigned long getCurrentTime() {
+  return millis();
+  // return micros();
+}
+
+// Interrupt handler: fires on any change of the relay contact pin.
+// It measures the time elapsed since the relay pin was last toggled.
+void IRAM_ATTR onContactChange() {
+  reactionTime = getCurrentTime() - toggleStartTime;
+  edgeDetected = true;
 }
 
 void setup() {
@@ -23,58 +36,56 @@ void setup() {
   digitalWrite(RELAY_PIN, LOW);
 
   pinMode(CONTACT_PIN, INPUT_PULLDOWN);
+  attachInterrupt(digitalPinToInterrupt(CONTACT_PIN), onContactChange, CHANGE);
 
   Serial.println("=== Relay Actuation Time Test ===");
   delay(RELAY_SET_MS);
 }
 
-void loop() {
-  contactStatus = digitalRead(CONTACT_PIN);
-  counter++;
-  int startTime = getCurrentTime();
-  digitalWrite(RELAY_PIN, HIGH);
-  while (contactStatus == LOW)
-  {
-      delay(1);
-      contactStatus = digitalRead(CONTACT_PIN);
-  }
-  int result = getCurrentTime() - startTime ;
+// Toggles the relay to newState and waits (via interrupt) for the contact
+// pin to react. Returns the measured reaction time in microseconds, or -1
+// on timeout.
+long toggleAndMeasure(int newState) {
+  edgeDetected = false;
+  toggleStartTime = getCurrentTime();
+  digitalWrite(RELAY_PIN, newState);
 
+  while (!edgeDetected) {
+    if (getCurrentTime() - toggleStartTime > WAIT_TIMEOUT_US) {
+      return -1;
+    }
+    yield();
+  }
+
+  return (long)reactionTime;
+}
+
+void loop() {
+  counter++;
+
+  long result = toggleAndMeasure(HIGH);
   Serial.print("ON: ");
   Serial.print(result);
-  Serial.println(" mcs");
+  Serial.println(" ms");
   delay(RELAY_SET_MS);
-
   summ += result;
 
-
-  startTime = getCurrentTime();
-  digitalWrite(RELAY_PIN, LOW);
-    while (contactStatus == HIGH)
-  {
-      delay(1);
-      contactStatus = digitalRead(CONTACT_PIN);
-  }
-  result = getCurrentTime() - startTime ;
+  result = toggleAndMeasure(LOW);
   Serial.print("OFF: ");
   Serial.print(result);
-  Serial.println(" mcs");
+  Serial.println(" ms");
   delay(RELAY_SET_MS);
-
   summ += result;
-
 
   Serial.println('_');
 
-  if (counter == 10)
-  {
-    average = summ / counter;
+  if (counter == MEASUREMENTS_COUNT) {
+    average = summ / (counter * 2);
     Serial.print("Average: ");
     Serial.print(average);
-    Serial.println(" mcs");
+    Serial.println(" ms");
     counter = 0;
     summ = 0;
   }
-
 }
 
